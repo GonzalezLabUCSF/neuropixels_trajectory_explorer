@@ -76,11 +76,13 @@ gui_data = struct;
 
 atlas_path = 'C:\Users\Gonzalez Lab\Documents\Code\atlas';
 
+
 if isempty(atlas_path)
     error('Rat atlas not in MATLAB path (click ''Set path'', add folder with CCF)');
 end
 
-tv = single(cast(rescale(permute(niftiread(fullfile(atlas_path,'atlas.img')),[2,3,1]),0,255),'uint16'));
+tv = single(cast(rescale(permute(niftiread(fullfile(atlas_path,'brainn.img')),[2,3,1]),0,255),'uint8'));
+roi =  single(cast(rescale(permute(niftiread(fullfile(atlas_path,'nuclei_delineations.img')),[2,3,1]),0,255),'uint8'));
 av = single(cast(rescale(permute(niftiread(fullfile(atlas_path, 'brain_delineations.img')),[2,3,1]),0,255),'uint16'));
 % [x_original, y_original, z_original] = meshgrid(1:size(tv, 3), 1:size(tv, 1), 1:size(tv, 2));
 % [x_desired, y_desired, z_desired] = meshgrid(linspace(1, size(tv, 3), 800), ...
@@ -97,6 +99,21 @@ av = single(cast(rescale(permute(niftiread(fullfile(atlas_path, 'brain_delineati
 
 %av= tv;
 
+% TESTING
+%load color map
+filename = fullfile(atlas_path,'new_labelss.label');
+startRow = 15;
+formatSpec = '%5f%6f%5f%5f%9f%3f%3f%s%[^\n\r]';
+fileID = fopen(filename,'r');
+dataArray = textscan(fileID, formatSpec, 'Delimiter', '', 'WhiteSpace', '', 'TextType', 'string', 'HeaderLines' ,startRow-1, 'ReturnOnError', false, 'EndOfLine', '\r\n');
+dataArray{8} = strtrim(dataArray{8});
+fclose(fileID);
+st_raw = table(dataArray{1:end-1}, 'VariableNames', {'index','R','G','B','A','VIS','MSH','safe_name'});
+st = table; 
+st(st_raw.index(2:end),:) = st_raw(2:end,:);
+clearvars filename startRow formatSpec fileID dataArray ans;
+
+%ccf_cmap = [st.R,st.G,st.B]/255;
 
 
 % Load CCF components
@@ -123,9 +140,9 @@ bregma_lambda_distance_avg = 4.1; % Currently approximation
 
 %bregma_ccf = [570.5,520,44]; % [ML,AP,DV]
 %bregma_ccf = [320,420,250]; % [AP,DV,ML]
-bregma_ccf = [120,120,120]; % [AP,DV,ML]
+bregma_ccf = [120,120,180]; % [AP,DV,ML]
 
-ccf_translation_tform = eye(4)+[zeros(3,4);-bregma_ccf([2,3,1]),0];
+ccf_translation_tform = eye(4)+[zeros(3,4);-bregma_ccf([1,2,3]),0];
 
 % FOV - 20.48mm x 20.48mm x 20.48mm 
 % acquisation matrix - 256*256*256*
@@ -133,11 +150,11 @@ ccf_translation_tform = eye(4)+[zeros(3,4);-bregma_ccf([2,3,1]),0];
 %scale = [0.952,-1.031,0.885]./100; % [ML,AP,DV]
 voxel2mm = 0.08;
 %scale = voxel2mm./[-1,1,-1]; % [AP,ML,DV]
-scale = voxel2mm./[1,-1,-1]; % [AP,ML,DV]
+scale = voxel2mm./[1,1,-1]; % [AP,ML,DV]
 ccf_scale_tform = eye(4).*[scale,1]';
 
 % (rotation values from IBL estimate)
-ap_rotation = 5; % tilt the CCF 5 degrees nose-up
+ap_rotation = 3; % tilt the CCF 5 degrees nose-up
 ccf_rotation_tform = ...
     [1 0 0 0; ...
     0 cosd(ap_rotation) -sind(ap_rotation) 0; ...
@@ -227,6 +244,7 @@ uimenu(name_menu,'Text','Acronym','MenuSelectedFcn',{@set_name_acronym,probe_atl
 uimenu(name_menu,'Text','Full','MenuSelectedFcn',{@set_name_full,probe_atlas_gui})
 slice_menu = uimenu(display_menu,'Text','Slice');
 uimenu(slice_menu,'Text','Anatomical','MenuSelectedFcn',{@visibility_tv_slice,probe_atlas_gui},'Checked','off')
+uimenu(slice_menu,'Text','ROI','MenuSelectedFcn',{@visibility_roi_slice,probe_atlas_gui})
 uimenu(slice_menu,'Text','Annotated','MenuSelectedFcn',{@visibility_av_slice,probe_atlas_gui})
 object_menu = uimenu(display_menu,'Text','Objects');
 uimenu(object_menu,'Text','Brain outline','MenuSelectedFcn',{@visibility_brain_outline,probe_atlas_gui},'Checked','on');
@@ -265,6 +283,7 @@ annotated_atlas = niftiread(fullfile(atlas_path,'nuclei_delineations.img'));
 
 %% Store initial GUI data
 gui_data.tv = tv; % Intensity atlas
+gui_data.roi = roi; % segmentation annotations
 gui_data.av = av; % Annotated atlas
 %gui_data.av = annotated_atlas;
 gui_data.st = st; % Labels table
@@ -504,6 +523,7 @@ if strcmp(gui_data.handles.slice_plot(1).Visible,'on')
     plane_coords_inbounds = all(plane_coords > 0 & ...
         plane_coords <= size(gui_data.tv),2);
 
+ 
     plane_idx = sub2ind(size(gui_data.tv), ...
         plane_coords(plane_coords_inbounds,1), ...
         plane_coords(plane_coords_inbounds,2), ...
@@ -517,6 +537,14 @@ if strcmp(gui_data.handles.slice_plot(1).Visible,'on')
 
             colormap(gui_data.handles.axes_atlas,'gray');
             caxis(gui_data.handles.axes_atlas,[0,255]);
+         
+        case 'roi'
+            curr_slice = nan(size(plane_ap_ccf));
+            curr_slice(plane_coords_inbounds) = gui_data.roi(plane_idx);
+            curr_slice(curr_slice < 20) = NaN; % threshold values
+    
+            colormap(gui_data.handles.axes_atlas,'gray');
+            caxis(gui_data.handles.axes_atlas,[0,255]);   
 
         case 'av'
             curr_slice = nan(size(plane_ap_ccf));
@@ -1282,6 +1310,7 @@ if ~isempty(plot_structure)
 
     structure_alpha = 0.2;
     plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{plot_structure},2,[])')./255;
+    %plot_structure_color = ccf_cmap;
 
     gui_data.structure_plot_idx(curr_structure_plot_idx) = plot_structure;
     gui_data.handles.structure_patch(curr_structure_plot_idx) = patch(gui_data.handles.axes_atlas, ...
@@ -1416,6 +1445,29 @@ set(gui_data.handles.slice_plot,'Visible',new_visibility);
 
 % Set slice data to TV
 gui_data.handles.slice_volume = 'tv';
+
+% Set menu item check
+h.Checked = new_visibility;
+
+% Uncheck other options (mutually exclusive menu)
+alt_menu_options = get(h.Parent,'Children');
+set(alt_menu_options(alt_menu_options ~= h),'Checked','off');
+
+% Update gui_data and slice
+guidata(probe_atlas_gui, gui_data);
+update_slice(probe_atlas_gui);
+
+end
+
+function visibility_roi_slice(h,eventdata,probe_atlas_gui)
+%Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+switch h.Checked; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
+set(gui_data.handles.slice_plot,'Visible',new_visibility);
+
+% Set slice data to TV
+gui_data.handles.slice_volume = 'roi';
 
 % Set menu item check
 h.Checked = new_visibility;

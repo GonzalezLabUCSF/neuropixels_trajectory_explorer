@@ -88,9 +88,11 @@ gui_data = struct;
 atlas_path = 'C:\Users\ucsfg\Downloads\neuropixels_trajectory_explorer-new_updates\atlas';
 
 tv = single(cast(rescale(permute(niftiread(fullfile(atlas_path,'brainn.img')),[2,3,1]),0,255),'uint8'));
-roi =  single(cast(rescale(permute(niftiread(fullfile(atlas_path,'testing_segment.nii')),[2,3,1]),0,255),'uint8'));
+%roi =  single(cast(rescale(permute(niftiread(fullfile(atlas_path,'overlapped.nii.gz')),[2,3,1]),0,255),'uint8'));
+roi =  single(cast(rescale(permute(niftiread(fullfile(atlas_path,'testing_segment.nii')),[2,3,1]),0,255),'uint16'));
+
 %av = single(cast(rescale(permute(niftiread(fullfile(atlas_path, 'brain_delineations.img')),[2,3,1]),0,255),'uint16'));
-av = single(cast(rescale(permute(niftiread(fullfile(atlas_path, 'brainn.img')),[2,3,1]),0,255),'uint16'));
+av = single(cast(rescale(permute(niftiread(fullfile(atlas_path, 'testing_segment.nii')),[2,3,1]),0,255),'uint16'));
 
 st= load_structure_tree([atlas_path filesep 'structure_tree_safe_2017.csv']); % a table of what all the labels mean
 
@@ -114,8 +116,8 @@ st= load_structure_tree([atlas_path filesep 'structure_tree_safe_2017.csv']); % 
 % Create CCF colormap
 %(copied from cortex-lab/allenCCF/setup_utils
 ccf_color_hex = st.color_hex_triplet;
-ccf_color_hex(cellfun(@numel,ccf_color_hex)==5) = {'019399'}; % special case where leading zero was evidently dropped
-ccf_cmap_c1 = cellfun(@(x)hex2dec(x(1:2)), ccf_color_hex, 'uni', false);
+%ccf_color_hex(cellfun(@numel,ccf_color_hex)==5) = {'019399'}; % special case where leading zero was evidently dropped
+ccf_cmap_c1 = cellfun(@(x)hex2dec(x(1:2)), ccf_color_hex,'uni', false);
 ccf_cmap_c2 = cellfun(@(x)hex2dec(x(3:4)), ccf_color_hex, 'uni', false);
 ccf_cmap_c3 = cellfun(@(x)hex2dec(x(5:6)), ccf_color_hex, 'uni', false);
 ccf_cmap = horzcat(vertcat(ccf_cmap_c1{:}),vertcat(ccf_cmap_c2{:}),vertcat(ccf_cmap_c3{:}))./255;
@@ -127,7 +129,6 @@ ccf_cmap = horzcat(vertcat(ccf_cmap_c1{:}),vertcat(ccf_cmap_c2{:}),vertcat(ccf_c
 
 % Set average stereotaxic bregma-lambda distance, set initial scale to 1
 bregma_lambda_distance_avg = 2.5; % Currently approximation
-
 
 % (translation values from our bregma estimate: AP/ML from Paxinos, DV from
 % rough MRI estimate)
@@ -192,7 +193,7 @@ probe_areas_plot = image(axes_probe_areas,[0,1],0,0);
 axes_probe_areas_probelimits = ...
     rectangle(axes_probe_areas, ...
     'position',[min(xlim(axes_probe_areas)),0,0,0], ...
-    'edgecolor','b','linewidth',5);
+    'edgecolor','y','linewidth',5);
 
 set(axes_probe_areas,'FontSize',12);
 set(axes_probe_areas,'XTick','','YColor','k','YDir','reverse');
@@ -536,15 +537,15 @@ if strcmp(gui_data.handles.slice_plot(1).Visible,'on')
             %caxis(gui_data.handles.axes_atlas,[0,255]);
 
       case 'roi'
-        curr_slice = nan(size(plane_ap_ccf));
-        curr_slice(plane_coords_inbounds) = gui_data.roi(plane_idx);
-        curr_slice(curr_slice < 0) = NaN; % threshold values
+            curr_slice = nan(size(plane_ap_ccf));
+            curr_slice(plane_coords_inbounds) = gui_data.roi(plane_idx);
+            curr_slice(curr_slice < 0) = NaN; % threshold values
+            
+            %colormap(gui_data.handles.axes_atlas); 
+            colormap(gui_data.handles.axes_atlas,gui_data.cmap);
+            %caxis(gui_data.handles.axes_atlas,[0,65536])
+            caxis(gui_data.handles.axes_atlas,[1,size(gui_data.cmap,1)]);
         
-        %colormap(gui_data.handles.axes_atlas,'parula'); 
-        colormap(gui_data.handles.axes_atlas,gui_data.cmap);
-        %caxis(gui_data.handles.axes_atlas,[0,65536])
-        %caxis(gui_data.handles.axes_atlas,[1,size(gui_data.cmap,1)]);
-
         case 'av'
             curr_slice = nan(size(plane_ap_ccf));
             curr_slice(plane_coords_inbounds) = gui_data.av(plane_idx);
@@ -829,6 +830,7 @@ probe_areas_hexcolors = gui_data.st.color_hex_triplet(probe_areas_plot);
 probe_areas_rgbcolors = cell2mat(cellfun(@(x) ...
     permute(hex2dec({x(1:2),x(3:4),x(5:6)})'./255,[1,3,2]), ...
     probe_areas_hexcolors,'uni',false));
+save("probe_area",'probe_areas_rgbcolors')
 for curr_shank = 1:n_shanks
     probe_areas_rgbcolors(imdilate(boundarymask( ...
         probe_areas_plot(:,curr_shank)),ones(20,1)),curr_shank,:) = 1;
@@ -1237,7 +1239,7 @@ probe_isgraphics = cellfun(@(x) ...
     ~any(isa(gui_data.probe(gui_data.selected_probe).(x)(:),'double')) ,probe_fieldnames);
 cellfun(@(x) delete(gui_data.probe(gui_data.selected_probe).(x)), ...
     probe_fieldnames(probe_isgraphics));
-
+ 
 % Remove selected probe data
 gui_data.probe(gui_data.selected_probe) = [];
 
@@ -1692,7 +1694,7 @@ end
 guidata(probe_atlas_gui,gui_data);
 end
 
-function visibility_darkmode(h,eventdata,probe_atlas_gui)
+function visibility_darkmode(h,~,probe_atlas_gui)
 % Get guidata
 gui_data = guidata(probe_atlas_gui);
 
@@ -1811,6 +1813,7 @@ for curr_probe = 1:n_probes
     probe_areas_rgbcolors = cell2mat(cellfun(@(x) ...
         permute(hex2dec({x(1:2),x(3:4),x(5:6)})'./255,[1,3,2]), ...
         probe_areas_hexcolors,'uni',false));
+    %disp(probe_areas_rgbcolors);
     for curr_shank = 1:n_shanks
         probe_areas_rgbcolors(imdilate(boundarymask( ...
             probe_areas_plot(:,curr_shank)),ones(20,1)),curr_shank,:) = 1;

@@ -1,3 +1,41 @@
+# LAB Specific guidelines
+
+## Getting Started
+
+1. **Clone repository/Download the zip file**
+
+You can get started with the zebra finch neuropixel trajectory explorer either by download the whole repository or cloning using the following git command
+```
+git clone https://github.com/GonzalezLabUCSF/neuropixels_trajectory_explorer.git
+```
+
+2. **Download/Clone npy-matlab repository**
+   Download npy-matlab library using the following link https://git3.hub.com/kwikteam/npy-matlab
+   ```
+   git clone https://github.com/kwikteam/npy-matlab.git
+   ```
+4. **Setup path**
+   Chage the npy-matlab and atlas path relative to your computer's path
+   
+   
+
+ 
+6. **Run zebra finch neuropixel trajectory explorer**
+
+   In matlab command window run the following command
+
+   ```
+   neuropixels_trajectory_explorer_finch
+   ```
+   
+
+   
+   
+   
+   
+
+
+
 [![DOI](https://zenodo.org/badge/429406115.svg)](https://zenodo.org/badge/latestdoi/429406115)
 
 # Neuropixels trajectory explorer

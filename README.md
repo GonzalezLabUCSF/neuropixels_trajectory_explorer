@@ -11,7 +11,7 @@ git clone https://github.com/GonzalezLabUCSF/neuropixels_trajectory_explorer.git
  ![Data](imgs/clone.png)
 
 2. **Download/Clone npy-matlab repository**
-   Download npy-matlab library using the following link https://git3.hub.com/kwikteam/npy-matlab
+   Download npy-matlab library using the following link https://github.com/kwikteam/npy-matlab
    ```
    git clone https://github.com/kwikteam/npy-matlab.git
    ```
@@ -33,7 +33,8 @@ git clone https://github.com/GonzalezLabUCSF/neuropixels_trajectory_explorer.git
    ```
    neuropixels_trajectory_explorer_finch
    ```
-   
+
+   For the zebra finch atlas Sinus-HVC is 2.5mm, for wild zebra finch Sinus-HVC is usually 2.0mm. This parameter is adjustable by setting Sinus-HVC distance in the *Brain scaling* menu.
 
    
    

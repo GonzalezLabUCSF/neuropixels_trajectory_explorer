@@ -17,7 +17,7 @@ function neuropixels_trajectory_explorer_finch
 %% Checks and initialize
 % Check MATLAB version
 matlab_version = version('-date');
-addpath('C:\Users\ucsfg\OneDrive\Documents\npy-matlab\npy-matlab-master\npy-matlab-master\npy-matlab');
+addpath('C:\Users\ucsfg\Downloads\NPIX\functions\npy-matlab');
 
 if str2num(matlab_version(end-3:end)) <= 2016
     error('Neuropixels Trajectory Explorer requires MATLAB 2016 or later');
@@ -85,14 +85,14 @@ gui_data = struct;
 % av = readNPY([allen_atlas_path filesep 'annotation_volume_10um_by_index.npy']); % the number at each pixel labels the area, see note below
 % st = load_structure_tree([allen_atlas_path filesep 'structure_tree_safe_2017.csv']); % a table of what all the labels mean
 
-atlas_path = 'C:\Users\ucsfg\Downloads\neuropixels_trajectory_explorer-new_updates\atlas';
+atlas_path = 'D:\Code\neuropixels_trajectory_explorer\atlas';
 
 tv = single(cast(rescale(permute(niftiread(fullfile(atlas_path,'brainn.img')),[2,3,1]),0,255),'uint8'));
 %roi =  single(cast(rescale(permute(niftiread(fullfile(atlas_path,'overlapped.nii.gz')),[2,3,1]),0,255),'uint8'));
 roi =  single(cast(rescale(permute(niftiread(fullfile(atlas_path,'testing_segment.nii')),[2,3,1]),0,255),'uint16'));
 
 %av = single(cast(rescale(permute(niftiread(fullfile(atlas_path, 'brain_delineations.img')),[2,3,1]),0,255),'uint16'));
-av = single(cast(rescale(permute(niftiread(fullfile(atlas_path, 'testing_segment.nii')),[2,3,1]),0,255),'uint16'));
+av = single(cast(rescale(permute(niftiread(fullfile(atlas_path, 'FINAL_testing_segment.nii')),[2,3,1]),0,255),'uint16'));
 
 st= load_structure_tree([atlas_path filesep 'structure_tree_safe_2017.csv']); % a table of what all the labels mean
 
